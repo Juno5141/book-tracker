@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  LIBRARIAN
+  MEMBER
+}
+
+enum BookStatus {
+  AVAILABLE
+  REQUESTED
+  CHECKED_OUT
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+enum AuditAction {
+  BOOK_CREATED
+  BOOK_UPDATED
+  BOOK_DELETED
+  BORROW_REQUESTED
+  BORROW_APPROVED
+  BORROW_DENIED
+  CHECKED_OUT
+  RETURNED
+  ROLE_CHANGED
+  AI_ENRICHED
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(MEMBER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts       Account[]
+  sessions       Session[]
+  borrowRequests BorrowRequest[]
+  checkouts      Checkout[]
+  auditLogs      AuditLog[]
+  resolvedRequests BorrowRequest[] @relation("ResolvedBy")
+}
+
+model Book {
+  id          String     @id @default(cuid())
+  title       String
+  author      String
+  genre       String?
+  tags        String[]   @default([])
+  description String?    @db.Text
+  isbn        String?
+  coverUrl    String?
+  difficulty  String?
+  status      BookStatus @default(AVAILABLE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  borrowRequests BorrowRequest[]
+  checkouts      Checkout[]
+  auditLogs      AuditLog[]
+
+  @@index([title])
+  @@index([author])
+  @@index([genre])
+  @@index([status])
+}
+
+model BorrowRequest {
+  id           String        @id @default(cuid())
+  userId       String
+  bookId       String
+  status       RequestStatus @default(PENDING)
+  requestedAt  DateTime      @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+  dueDate      DateTime?
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book       Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  resolvedBy User?     @relation("ResolvedBy", fields: [resolvedById], references: [id])
+  checkout   Checkout?
+
+  @@index([userId])
+  @@index([bookId])
+  @@index([status])
+}
+
+model Checkout {
+  id              String    @id @default(cuid())
+  userId          String
+  bookId          String
+  borrowRequestId String    @unique
+  checkedOutAt    DateTime  @default(now())
+  dueDate         DateTime
+  returnedAt      DateTime?
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book          Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  borrowRequest BorrowRequest @relation(fields: [borrowRequestId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([bookId])
+  @@index([dueDate])
+}
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  userId    String
+  bookId    String?
+  action    AuditAction
+  details   String?     @db.Text
+  createdAt DateTime    @default(now())
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book? @relation(fields: [bookId], references: [id], onDelete: SetNull)
+
+  @@index([bookId])
+  @@index([createdAt])
+}
