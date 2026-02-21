@@ -1,9 +1,20 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Shield, BookMarked, User } from "lucide-react";
+import { useState } from "react";
 
 export default function SignInPage() {
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const handleDevLogin = async (email: string) => {
+    setLoading(email);
+    await signIn("dev-login", { email, callbackUrl: "/books" });
+  };
+
+  const isDev = process.env.NODE_ENV === "development" || 
+    typeof window !== "undefined" && window.location.hostname === "localhost";
+
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
       <div className="bg-white rounded-xl shadow-sm border p-8 w-full max-w-md text-center">
@@ -14,8 +25,9 @@ export default function SignInPage() {
         <p className="text-gray-600 mb-8">Sign in to manage your library and track borrows</p>
 
         <button
-          onClick={() => signIn("google", { callbackUrl: "/books" })}
-          className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+          onClick={() => { setLoading("google"); signIn("google", { callbackUrl: "/books" }); }}
+          disabled={loading === "google"}
+          className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path
@@ -37,6 +49,58 @@ export default function SignInPage() {
           </svg>
           Continue with Google
         </button>
+
+        {/* Dev Login - only shown in development */}
+        {isDev && (
+          <>
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-3 bg-white text-gray-500">Dev Login (local only)</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => handleDevLogin("admin@dev.local")}
+                disabled={loading !== null}
+                className="w-full flex items-center gap-3 px-4 py-3 border-2 border-red-200 rounded-lg text-gray-700 font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                <Shield className="h-5 w-5 text-red-500" />
+                <div className="text-left">
+                  <div className="text-sm font-semibold">Admin</div>
+                  <div className="text-xs text-gray-500">Full access — manage users, books, everything</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => handleDevLogin("librarian@dev.local")}
+                disabled={loading !== null}
+                className="w-full flex items-center gap-3 px-4 py-3 border-2 border-blue-200 rounded-lg text-gray-700 font-medium hover:bg-blue-50 transition-colors disabled:opacity-50"
+              >
+                <BookMarked className="h-5 w-5 text-blue-500" />
+                <div className="text-left">
+                  <div className="text-sm font-semibold">Librarian</div>
+                  <div className="text-xs text-gray-500">Manage books, approve requests, check-in/out</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => handleDevLogin("member@dev.local")}
+                disabled={loading !== null}
+                className="w-full flex items-center gap-3 px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                <User className="h-5 w-5 text-gray-500" />
+                <div className="text-left">
+                  <div className="text-sm font-semibold">Member</div>
+                  <div className="text-xs text-gray-500">Browse, search, request borrows</div>
+                </div>
+              </button>
+            </div>
+          </>
+        )}
 
         <p className="mt-6 text-xs text-gray-500">
           By signing in, you agree to our terms of service.
