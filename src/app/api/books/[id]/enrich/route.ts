@@ -146,7 +146,7 @@ export async function POST(
   try {
     // 1. Try local known-book lookup first (instant, free, offline)
     const titleKey = book.title.toLowerCase().trim();
-    let enriched = KNOWN_BOOKS[titleKey] || null;
+    let enriched: { synopsis: string; tags: string[]; genre: string; difficulty: string; } | null = KNOWN_BOOKS[titleKey] || null;
     let source = "local-db";
 
     // Also try partial match
