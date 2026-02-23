@@ -90,6 +90,22 @@ export default function BooksPage() {
         )}
       </div>
 
+      {/* Guest CTA */}
+      {!session && (
+        <div className="bg-gradient-to-r from-primary-50 to-blue-50 rounded-xl border border-primary-200 p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <BookOpen className="h-6 w-6 text-primary-500" />
+            <div>
+              <p className="font-medium text-gray-900">Want to borrow a book?</p>
+              <p className="text-sm text-gray-600">Sign in to request checkouts and track your reading</p>
+            </div>
+          </div>
+          <Link href="/auth/signin">
+            <Button size="sm">Sign In</Button>
+          </Link>
+        </div>
+      )}
+
       {/* Search & Filters */}
       <div className="bg-white rounded-xl border p-4 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-3">
@@ -121,16 +137,18 @@ export default function BooksPage() {
               <option value="Science">Science</option>
               <option value="Technology">Technology</option>
             </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
-            >
-              <option value="">All Status</option>
-              <option value="AVAILABLE">Available</option>
-              <option value="REQUESTED">Requested</option>
-              <option value="CHECKED_OUT">Checked Out</option>
-            </select>
+            {session && (
+              <select
+                value={statusFilter}
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:outline-none"
+              >
+                <option value="">All Status</option>
+                <option value="AVAILABLE">Available</option>
+                <option value="REQUESTED">Requested</option>
+                <option value="CHECKED_OUT">Checked Out</option>
+              </select>
+            )}
             {hasFilters && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
                 <X className="h-4 w-4 mr-1" /> Clear
@@ -188,7 +206,7 @@ export default function BooksPage() {
                     <h3 className="font-semibold text-gray-900 line-clamp-1 group-hover:text-primary-600 transition-colors">
                       {book.title}
                     </h3>
-                    <StatusBadge status={book.status} />
+                    {session && book.status && <StatusBadge status={book.status} />}
                   </div>
                   <p className="text-sm text-gray-600">{book.author}</p>
                   {book.genre && (

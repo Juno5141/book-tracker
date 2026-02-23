@@ -154,7 +154,7 @@ export default function BookDetailPage() {
                 <h1 className="text-2xl font-bold text-gray-900">{book.title}</h1>
                 <p className="text-lg text-gray-600">{book.author}</p>
               </div>
-              <StatusBadge status={book.status} />
+              {session && book.status && <StatusBadge status={book.status} />}
             </div>
 
             {book.description && (
@@ -181,35 +181,45 @@ export default function BookDetailPage() {
 
             {/* Actions */}
             <div className="flex flex-wrap gap-2 pt-2 border-t">
-              {session && book.status === "AVAILABLE" && (
-                <Button onClick={handleRequest} loading={requesting} variant="primary">
-                  📚 Request to Borrow
-                </Button>
-              )}
-              {isStaff && (
-                <>
-                  <Link href={`/books/${bookId}/edit`}>
-                    <Button variant="outline">
-                      <Edit className="h-4 w-4 mr-1" /> Edit
-                    </Button>
-                  </Link>
-                  <Button onClick={handleEnrich} loading={enriching} variant="outline">
-                    <Sparkles className="h-4 w-4 mr-1" /> AI Enrich
+              {!session ? (
+                <Link href="/auth/signin">
+                  <Button variant="primary">
+                    Sign in to borrow this book
                   </Button>
+                </Link>
+              ) : (
+                <>
+                  {book.status === "AVAILABLE" && (
+                    <Button onClick={handleRequest} loading={requesting} variant="primary">
+                      📚 Request to Borrow
+                    </Button>
+                  )}
+                  {isStaff && (
+                    <>
+                      <Link href={`/books/${bookId}/edit`}>
+                        <Button variant="outline">
+                          <Edit className="h-4 w-4 mr-1" /> Edit
+                        </Button>
+                      </Link>
+                      <Button onClick={handleEnrich} loading={enriching} variant="outline">
+                        <Sparkles className="h-4 w-4 mr-1" /> AI Enrich
+                      </Button>
+                    </>
+                  )}
+                  {isAdmin && (
+                    <Button onClick={handleDelete} loading={deleting} variant="danger">
+                      <Trash2 className="h-4 w-4 mr-1" /> Delete
+                    </Button>
+                  )}
                 </>
-              )}
-              {isAdmin && (
-                <Button onClick={handleDelete} loading={deleting} variant="danger">
-                  <Trash2 className="h-4 w-4 mr-1" /> Delete
-                </Button>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Active Checkouts */}
-      {book.checkouts && book.checkouts.length > 0 && (
+      {/* Active Checkouts (authenticated only) */}
+      {session && book.checkouts && book.checkouts.length > 0 && (
         <div className="bg-white rounded-xl border shadow-sm p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <Clock className="h-5 w-5 text-gray-400" />

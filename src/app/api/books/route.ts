@@ -2,15 +2,16 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, unauthorized, forbidden, badRequest } from "@/lib/rbac";
 
-// GET /api/books — List books with search/filter
+// GET /api/books — List books with search/filter (public)
 export async function GET(req: Request) {
   const session = await getSession();
-  if (!session?.user) return unauthorized();
+  const isAuthenticated = !!session?.user;
 
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search") || "";
   const genre = searchParams.get("genre") || "";
-  const status = searchParams.get("status") || "";
+  // Only allow status filtering for authenticated users
+  const status = isAuthenticated ? (searchParams.get("status") || "") : "";
   const tag = searchParams.get("tag") || "";
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
@@ -47,7 +48,12 @@ export async function GET(req: Request) {
     prisma.book.count({ where }),
   ]);
 
-  return NextResponse.json({ books, total, page, totalPages: Math.ceil(total / limit) });
+  // For unauthenticated users, strip checkout status and sensitive fields
+  const responseBooks = isAuthenticated
+    ? books
+    : books.map(({ status, ...rest }) => ({ ...rest, status: undefined }));
+
+  return NextResponse.json({ books: responseBooks, total, page, totalPages: Math.ceil(total / limit) });
 }
 
 // POST /api/books — Create a book (ADMIN, LIBRARIAN)

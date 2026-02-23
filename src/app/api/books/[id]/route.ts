@@ -2,28 +2,30 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession, unauthorized, forbidden, badRequest } from "@/lib/rbac";
 
-// GET /api/books/[id]
+// GET /api/books/[id] (public — limited data for guests)
 export async function GET(
   req: Request,
   { params }: { params: { id: string } }
 ) {
   const session = await getSession();
-  if (!session?.user) return unauthorized();
+  const isAuthenticated = !!session?.user;
 
   const book = await prisma.book.findUnique({
     where: { id: params.id },
-    include: {
-      checkouts: {
-        include: { user: { select: { id: true, name: true, email: true, image: true } } },
-        orderBy: { checkedOutAt: "desc" },
-        take: 10,
-      },
-      borrowRequests: {
-        where: { status: "PENDING" },
-        include: { user: { select: { id: true, name: true, email: true, image: true } } },
-        orderBy: { requestedAt: "desc" },
-      },
-    },
+    include: isAuthenticated
+      ? {
+          checkouts: {
+            include: { user: { select: { id: true, name: true, email: true, image: true } } },
+            orderBy: { checkedOutAt: "desc" },
+            take: 10,
+          },
+          borrowRequests: {
+            where: { status: "PENDING" },
+            include: { user: { select: { id: true, name: true, email: true, image: true } } },
+            orderBy: { requestedAt: "desc" },
+          },
+        }
+      : undefined,
   });
 
   if (!book) {
