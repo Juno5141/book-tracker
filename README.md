@@ -128,15 +128,18 @@ Open [http://localhost:3000](http://localhost:3000)
 **Option A: Auto-admin (recommended)**
 Set `ADMIN_EMAIL=your@email.com` in `.env`. When that Google account signs in, it automatically becomes ADMIN.
 
-**Option B: Manual promotion**
-1. Sign in with any Google account (becomes MEMBER)
-2. Use the admin account to go to `/admin/users`
-3. Change the user's role from the dropdown
+**Option B: Manual promotion via Admin Panel**
+1. Sign in with the admin account (the one matching `ADMIN_EMAIL`)
+2. Go to **Admin → Users** (`/admin/users`)
+3. Use the role dropdown next to any user to promote them to LIBRARIAN or ADMIN
+4. Changes take effect immediately — no sign-out/sign-in required for the target user
 
 **Option C: Direct database**
 ```sql
 UPDATE "User" SET role = 'ADMIN' WHERE email = 'your@email.com';
 ```
+
+> **📌 Note for reviewers:** The `ADMIN_EMAIL` environment variable is configured in the **Vercel deployment settings** (Settings → Environment Variables). To change which account is auto-promoted to admin, update the `ADMIN_EMAIL` value in Vercel and redeploy. Any existing admin can also promote additional users to ADMIN or LIBRARIAN directly from the `/admin/users` page without changing environment variables.
 
 ## 📁 Project Structure
 
